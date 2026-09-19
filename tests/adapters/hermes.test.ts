@@ -83,6 +83,15 @@ os.environ["HERMES_STUB_RESPONSE"] = json.dumps({"action":"approve","message":"c
 assert c.hooks["pre_tool_call"]("terminal", {"command":"danger"}) == {"action":"approve","message":"confirm"}
 os.environ["HERMES_STUB_RESPONSE"] = "not-json"
 assert c.hooks["pre_tool_call"]("terminal", {"command":"unchanged"}) is None
+project_id=m.sha256("/project-a".encode()).hexdigest()[:12]
+search=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_search", {"queries":["needle"]}, cwd="/project-a")
+assert search == {"action":"modify","args":{"queries":["needle"],"source":project_id}}, repr(search)
+cross=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_search", {"queries":["needle"],"source":"hermes:read_file:other-project:session:call"}, cwd="/project-a")
+assert cross == {"action":"modify","args":{"queries":["needle"],"source":project_id}}, repr(cross)
+own_source=f"hermes:read_file:{project_id}:session:call"
+assert c.hooks["pre_tool_call"]("mcp__context_mode__ctx_search", {"queries":["needle"],"source":own_source}, cwd="/project-a") is None
+indexed=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_index", {"content":"text","source":"manual-doc"}, cwd="/project-a")
+assert indexed == {"action":"modify","args":{"content":"text","source":f"hermes:manual:{project_id}:manual-doc"}}, repr(indexed)
 large="x"*17000
 assert c.hooks["transform_tool_result"]("terminal", large, session_id="s") is None
 marker=c.hooks["transform_tool_result"]("read_file", large, session_id="s", tool_call_id="call-a")

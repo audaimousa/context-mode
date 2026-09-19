@@ -109,6 +109,16 @@ def _run_hook(event: str, payload: dict[str, Any], timeout: float = _TIMEOUT) ->
 
 
 def _pre_tool_call(tool_name: str, args: dict[str, Any], **kwargs: Any) -> dict[str, Any] | None:
+    if tool_name in {_CTX_PREFIX + "index", _CTX_PREFIX + "search"}:
+        project_id = sha256(_project(kwargs).encode()).hexdigest()[:12]
+        source = str(args.get("source") or "manual")
+        if f":{project_id}:" not in source:
+            scoped = dict(args)
+            scoped["source"] = (
+                project_id if tool_name.endswith("ctx_search")
+                else f"hermes:manual:{project_id}:{source}"
+            )
+            return {"action": "modify", "args": scoped}
     canonical, mapped_args = _map_to_context_mode(tool_name, args)
     response = _run_hook("pretooluse", {
         "tool_name": canonical,
