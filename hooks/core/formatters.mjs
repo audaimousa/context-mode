@@ -4,6 +4,14 @@
  */
 
 export const formatters = {
+  "hermes": {
+    deny: (reason) => ({ action: "block", message: reason }),
+    ask: (reason) => ({ action: "approve", message: reason || "Action requires confirmation" }),
+    modify: (updatedInput) => ({ action: "modify", args: updatedInput }),
+    // Hermes pre_tool_call has no context-only directive. Result transformation
+    // and session hooks cover context control without mutating tool arguments.
+    context: () => null,
+  },
   "claude-code": {
     deny: (reason) => ({
       hookSpecificOutput: {

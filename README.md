@@ -581,6 +581,46 @@ Full documentation: [`docs/adapters/openclaw.md`](docs/adapters/openclaw.md)
 </details>
 
 <details>
+<summary><strong>Hermes Agent (modified fork)</strong> — MCP data plane + native Python hooks</summary>
+
+**Prerequisites:** Node.js >= 22.5 and the published CLI (`npm install -g context-mode`).
+
+This support is maintained on the `audaimousa/context-mode`
+`feature/task-0096-hermes-support` branch and is not part of upstream main.
+Use a reviewed commit from that branch during a separate host-validation task.
+
+Configure the canonical MCP server in `~/.hermes/config.yaml`:
+
+```yaml
+mcp_servers:
+  context_mode:
+    command: context-mode
+    args: []
+    enabled: true
+```
+
+After installation and enablement, verify with `/ctx-doctor` and `/ctx-stats`;
+`/ctx-search <query>` searches the same MCP index.
+
+Hermes receives exact MCP names such as `mcp__context_mode__ctx_search`. The
+root plugin uses only public lifecycle hooks and profile-scoped `dispatch_tool`:
+it captures tool/session events in the existing SessionDB pipeline and replaces
+eligible oversized read-only results only after
+`mcp__context_mode__ctx_index` confirms success. All bridge subprocesses are
+bounded and fail open. `pre_tool_call` uses Hermes' current `block`, `approve`,
+and `modify` directives; it never dispatches Terminal or silently substitutes
+`ctx_execute*` for Terminal. Storage is rooted under the active
+`$HERMES_HOME` and context-mode's existing project sharding; indexed source
+labels also contain project and session hashes. Hermes currently exposes no
+public pre-compaction plugin hook, so exact compaction continuity is not
+claimed. Memory-provider and context-engine APIs are not used.
+
+Rollback removes or disables only this external plugin and its `context_mode`
+MCP configuration; no Hermes source rollback is required.
+
+</details>
+
+<details>
 <summary><strong>Codex CLI</strong> — MCP + hooks</summary>
 
 **Prerequisites:** Node.js >= 22.5 (or Bun), Codex CLI installed.

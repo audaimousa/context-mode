@@ -1,0 +1,12 @@
+name: context-mode
+version: "1.0.169"
+description: Modified fork integration for Hermes Agent using context-mode's existing MCP data plane
+author: Mert Koseoglu; Hermes integration modified by Audai Mousa
+license: Elastic-2.0
+provides_hooks:
+  - pre_tool_call
+  - post_tool_call
+  - on_session_start
+  - on_session_end
+  - on_session_finalize
+  - transform_tool_result
