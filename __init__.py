@@ -52,12 +52,12 @@ def _project(kwargs: dict[str, Any]) -> str:
 
 
 def _profile_home() -> str:
-    configured = os.environ.get("HERMES_HOME")
-    if configured:
-        return str(Path(configured).expanduser().resolve())
     plugin_dir = Path(__file__).resolve().parent
     if plugin_dir.parent.name == "plugins":
         return str(plugin_dir.parent.parent)
+    configured = os.environ.get("HERMES_HOME")
+    if configured:
+        return str(Path(configured).expanduser().resolve())
     return str(Path.home() / ".hermes")
 
 

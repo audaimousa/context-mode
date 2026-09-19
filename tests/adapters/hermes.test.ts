@@ -58,7 +58,7 @@ print(os.environ.get("HERMES_STUB_RESPONSE", "{}"), end="")
     if (!windows) chmodSync(stub, 0o755);
 
     const harness = String.raw`
-import importlib.util, json, os, pathlib, tempfile, time
+import importlib.util, json, os, pathlib, shutil, tempfile, time
 root=pathlib.Path(${JSON.stringify(ROOT)})
 spec=importlib.util.spec_from_file_location("context_mode_hermes", root/"__init__.py")
 m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -88,6 +88,10 @@ assert c.hooks["transform_tool_result"]("terminal", large, session_id="s") is No
 marker=c.hooks["transform_tool_result"]("read_file", large, session_id="s", tool_call_id="call-a")
 assert marker and "indexed 17000 bytes" in marker
 assert c.calls[-1][0] == "mcp__context_mode__ctx_index"
+source_a=c.calls[-1][1]["source"]
+marker=c.hooks["transform_tool_result"]("read_file", large, session_id="other", tool_call_id="call-a", cwd="/other-project")
+source_b=c.calls[-1][1]["source"]
+assert source_a != source_b and "/other-project" not in source_b
 assert c.hooks["transform_tool_result"]("mcp__context_mode__ctx_search", large, session_id="s") is None
 original_dispatch=c.dispatch_tool
 def fail(*a, **k): raise RuntimeError("offline")
@@ -99,6 +103,13 @@ started=time.monotonic()
 assert c.hooks["transform_tool_result"]("read_file", large, session_id="s") is None
 assert time.monotonic()-started < 0.1
 assert all(call[0] != "terminal" for call in c.calls)
+profile=pathlib.Path(${JSON.stringify(binDir)})/"isolated"/"plugins"/"context-mode"
+profile.mkdir(parents=True)
+shutil.copy2(root/"__init__.py", profile/"__init__.py")
+profile_spec=importlib.util.spec_from_file_location("context_mode_profile", profile/"__init__.py")
+profile_mod=importlib.util.module_from_spec(profile_spec); profile_spec.loader.exec_module(profile_mod)
+os.environ["HERMES_HOME"]="/wrong-profile"
+assert profile_mod._profile_home() == str(profile.parent.parent)
 print("ok")
 `;
     const run = spawnSync("python3", ["-c", harness], {
