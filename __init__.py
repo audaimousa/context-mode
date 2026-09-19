@@ -182,6 +182,8 @@ def _index_succeeded(value: Any) -> bool:
     if parsed.get("success") is True:
         return True
     result = parsed.get("result", parsed)
+    if isinstance(result, str):
+        return result.startswith("Indexed ")
     if not isinstance(result, dict) or result.get("error") or result.get("isError") is True:
         return False
     if result.get("success") is True:

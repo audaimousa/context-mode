@@ -70,7 +70,7 @@ class C:
  def dispatch_tool(self,n,a,**kw):
   self.calls.append((n,a,kw))
   if self.delay: time.sleep(0.2)
-  return json.dumps({"result":{"content":[{"type":"text","text":"Indexed 1 chunk"}]}})
+  return json.dumps({"result":"Indexed 1 sections (0 with code) from: live-hermes"})
 c=C(); m.register(c)
 assert {"pre_tool_call","post_tool_call","on_session_start","on_session_end","on_session_finalize","transform_tool_result"} == set(c.hooks)
 assert {"ctx-stats","ctx-doctor","ctx-search"} == set(c.commands)
@@ -93,6 +93,8 @@ marker=c.hooks["transform_tool_result"]("read_file", large, session_id="other", 
 source_b=c.calls[-1][1]["source"]
 assert source_a != source_b and "/other-project" not in source_b
 assert c.hooks["transform_tool_result"]("mcp__context_mode__ctx_search", large, session_id="s") is None
+assert m._index_succeeded(json.dumps({"result":{"content":[{"type":"text","text":"Indexed 1 chunk"}]}}))
+assert not m._index_succeeded(json.dumps({"result":"Index failed"}))
 original_dispatch=c.dispatch_tool
 def fail(*a, **k): raise RuntimeError("offline")
 c.dispatch_tool=fail
