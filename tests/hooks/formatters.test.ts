@@ -17,6 +17,7 @@ let agyFormat: (decision: unknown) => unknown;
 // optional capability hint ({ codexSupportsRewrite }) threaded by the hook (#845).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loose test seams over .mjs
 let codexFormat: (decision: unknown, opts?: any) => unknown;
+let hermesFormat: (decision: unknown) => unknown;
 // codex capability detection helpers (#845, hooks/core/codex-caps.mjs).
 let parseCodexVersion: (raw: unknown) => number[] | null;
 let versionGte: (a: number[], b: number[]) => boolean;
@@ -43,6 +44,8 @@ beforeAll(async () => {
     coreMod.formatDecision("antigravity-cli", decision as { action: string } | null);
   codexFormat = (decision: unknown, opts?: Record<string, unknown>) =>
     coreMod.formatDecision("codex", decision as { action: string } | null, opts);
+  hermesFormat = (decision: unknown) =>
+    coreMod.formatDecision("hermes", decision as { action: string } | null);
 
   const capsMod = await import("../../hooks/core/codex-caps.mjs");
   parseCodexVersion = capsMod.parseCodexVersion;
@@ -77,6 +80,21 @@ const contextDecision = {
 // ─────────────────────────────────────────────────────────
 
 describe("formatDecision", () => {
+  describe("hermes formatter", () => {
+    it("uses current Hermes block, approve, and modify directives", () => {
+      expect(hermesFormat({ action: "deny", reason: "blocked" }))
+        .toEqual({ action: "block", message: "blocked" });
+      expect(hermesFormat({ action: "ask", reason: "confirm" }))
+        .toEqual({ action: "approve", message: "confirm" });
+      expect(hermesFormat({ action: "modify", updatedInput: { command: "echo guidance" } }))
+        .toEqual({ action: "modify", args: { command: "echo guidance" } });
+    });
+
+    it("drops context-only guidance instead of changing tool execution", () => {
+      expect(hermesFormat({ action: "context", additionalContext: "hint" })).toBeNull();
+    });
+  });
+
   // ─── Claude Code formatter ─────────────────────────────
 
   describe("claude-code formatter", () => {

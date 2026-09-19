@@ -51,33 +51,6 @@ describe("vscode-copilot formatter", () => {
   });
 });
 
-describe("hermes formatter", () => {
-  it("uses current Hermes modify directives for argument rewrites", () => {
-    const result = formatDecision("hermes", {
-      action: "modify",
-      updatedInput: { command: 'echo "use mcp__context_mode__ctx_execute"' },
-    });
-    expect(result).toEqual({
-      action: "modify",
-      args: { command: 'echo "use mcp__context_mode__ctx_execute"' },
-    });
-  });
-
-  it("uses the Hermes block shape for direct denials", () => {
-    const result = formatDecision("hermes", { action: "deny", reason: "blocked" });
-    expect(result).toEqual({ action: "block", message: "blocked" });
-  });
-
-  it("routes asks through Hermes' approval gate", () => {
-    expect(formatDecision("hermes", { action: "ask", reason: "confirm" }))
-      .toEqual({ action: "approve", message: "confirm" });
-  });
-
-  it("drops context-only guidance instead of changing tool execution", () => {
-    expect(formatDecision("hermes", { action: "context", additionalContext: "hint" })).toBeNull();
-  });
-});
-
 describe("formatDecision integration", () => {
   it("claude-code deny flows through with correct field names", () => {
     const result = formatDecision("claude-code", { action: "deny", reason: "sandbox only" });
