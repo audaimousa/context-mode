@@ -79,7 +79,6 @@ const HOOK_MAP: Record<string, Record<string, string>> = {
     pretooluse: "hooks/pretooluse.mjs",
     posttooluse: "hooks/posttooluse.mjs",
     sessionstart: "hooks/sessionstart.mjs",
-    userpromptsubmit: "hooks/userpromptsubmit.mjs",
     stop: "hooks/stop.mjs",
   },
   "claude-code": {

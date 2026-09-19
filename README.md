@@ -583,7 +583,9 @@ Full documentation: [`docs/adapters/openclaw.md`](docs/adapters/openclaw.md)
 <details>
 <summary><strong>Hermes Agent (modified fork)</strong> — MCP data plane + native Python hooks</summary>
 
-**Prerequisites:** Node.js >= 22.5 and the published CLI (`npm install -g context-mode`).
+**Prerequisites:** Node.js >= 22.5 and the CLI built from the same reviewed fork
+commit as the Python plugin. Upstream npm `1.0.169` does not contain the Hermes
+hook dispatcher; do not mix it with this adapter.
 
 This support is maintained on the `audaimousa/context-mode`
 `feature/task-0096-hermes-support` branch and is not part of upstream main.

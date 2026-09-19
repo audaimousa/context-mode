@@ -86,7 +86,6 @@ describe("detectPlatform", () => {
 
   // ── Claude Code ────────────────────────────────────────
 
-
   it("returns claude-code when CLAUDE_PROJECT_DIR is set", () => {
     process.env.CLAUDE_PROJECT_DIR = "/some/project";
     const signal = detectPlatform();

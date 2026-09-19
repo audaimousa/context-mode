@@ -130,7 +130,6 @@ export interface PlatformEnvEntry {
  * `getEnvVarNames(p)` to get just the names (legacy `string[]` shape).
  */
 const _PLATFORM_ENV_VARS_RAW: ReadonlyArray<readonly [PlatformId, readonly PlatformEnvEntry[]]> = [
-
   // Order matters: forks listed BEFORE the fork's parent so collision
   // detection works. Every entry verified against platform's own runtime
   // source code (PR #376 follow-up: full audit, May 2026 — see git blame).

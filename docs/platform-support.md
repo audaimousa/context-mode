@@ -1,6 +1,6 @@
 # Platform Support Matrix
 
-This document provides a comprehensive comparison of all platforms supported by context-mode, including their hook paradigms, capabilities, configuration, and known limitations.
+This document compares upstream platforms and summarizes this fork's Hermes integration separately, including hook paradigms, capabilities, configuration, and known limitations.
 
 ## Overview
 
@@ -17,7 +17,7 @@ The MCP server layer is 100% portable and needs no adapter. Only the hook layer 
 
 ### Hermes Agent
 
-Hermes uses the modified `audaimousa/context-mode` Python plugin and a separately configured `context_mode` MCP server. The globally installed `context-mode` executable is required for both stdio MCP and bounded, fail-open `context-mode hook hermes <event>` dispatch. Hermes tool names are exactly `mcp__context_mode__<tool>` and storage is rooted under the active `$HERMES_HOME` (normally `~/.hermes`). The current public `pre_tool_call` contract supports `block`, `approve`, and argument `modify` directives. The plugin never dispatches Terminal and never substitutes `ctx_execute*` for Terminal.
+Hermes uses the modified `audaimousa/context-mode` Python plugin and a separately configured `context_mode` MCP server. The `context-mode` executable built from the same reviewed fork commit is required for both stdio MCP and bounded, fail-open `context-mode hook hermes <event>` dispatch; upstream npm `1.0.169` does not contain that dispatcher. Hermes tool names are exactly `mcp__context_mode__<tool>` and storage is rooted under the active `$HERMES_HOME` (normally `~/.hermes`). The current public `pre_tool_call` contract supports `block`, `approve`, and argument `modify` directives. The plugin never dispatches Terminal and never substitutes `ctx_execute*` for Terminal.
 
 | Hermes capability | Support |
 |---|---|
@@ -44,7 +44,7 @@ This puts the `context-mode` binary in PATH, which is required for:
 
 ---
 
-## Main Comparison Table
+## Main upstream comparison table
 
 | Feature | Claude Code | Qwen Code | Gemini CLI | VS Code Copilot | JetBrains Copilot | GitHub Copilot CLI | Cursor | OpenCode | KiloCode | OpenClaw | Codex CLI | Kimi Code | Antigravity | Antigravity CLI (`agy`) | Kiro | Zed | Pi | OMP |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
