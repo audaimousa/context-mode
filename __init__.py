@@ -49,7 +49,18 @@ def _sid(kwargs: dict[str, Any]) -> str:
 
 
 def _project(kwargs: dict[str, Any]) -> str:
-    return os.path.realpath(str(kwargs.get("project_dir") or kwargs.get("cwd") or os.getcwd()))
+    explicit = kwargs.get("project_dir") or kwargs.get("cwd")
+    if explicit:
+        return os.path.realpath(str(explicit))
+    try:
+        from agent.runtime_cwd import scoped_session_cwd
+    except ImportError:  # Standalone adapter tests and non-Hermes hosts.
+        pass
+    else:
+        logical = scoped_session_cwd()
+        if logical:
+            return os.path.normpath(logical)  # Remote/container paths need not exist here.
+    return os.path.realpath(os.getcwd())
 
 
 def _profile_home() -> str:

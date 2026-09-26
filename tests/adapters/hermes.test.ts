@@ -58,8 +58,14 @@ print(os.environ.get("HERMES_STUB_RESPONSE", "{}"), end="")
     if (!windows) chmodSync(stub, 0o755);
 
     const harness = String.raw`
-import contextvars, importlib.util, json, os, pathlib, shutil, tempfile, time
+import contextvars, importlib.util, json, os, pathlib, shutil, sys, tempfile, time, types
 root=pathlib.Path(${JSON.stringify(ROOT)})
+logical_cwd=contextvars.ContextVar("logical_cwd", default="")
+agent=types.ModuleType("agent")
+agent.runtime_cwd=types.ModuleType("agent.runtime_cwd")
+agent.runtime_cwd.scoped_session_cwd=logical_cwd.get
+sys.modules["agent"]=agent
+sys.modules["agent.runtime_cwd"]=agent.runtime_cwd
 spec=importlib.util.spec_from_file_location("context_mode_hermes", root/"__init__.py")
 m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 profile_scope=contextvars.ContextVar("profile_scope", default="default")
@@ -95,6 +101,17 @@ own_source=f"hermes:read_file:{project_id}:session:call"
 assert c.hooks["pre_tool_call"]("mcp__context_mode__ctx_search", {"queries":["needle"],"source":own_source}, cwd="/project-a") is None
 indexed=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_index", {"content":"text","source":"manual-doc"}, cwd="/project-a")
 assert indexed == {"action":"modify","args":{"content":"text","source":f"hermes:manual:{project_id}:manual-doc"}}, repr(indexed)
+assert m._project({"project_dir":"/explicit-project", "cwd":"/explicit-cwd"}) == "/explicit-project"
+assert m._project({"cwd":"/explicit-cwd"}) == "/explicit-cwd"
+assert m._project({}) == os.path.realpath(os.getcwd())
+logical_a=logical_cwd.set("/remote/project-a")
+assert m._project({}) == "/remote/project-a"
+assert m._project({"cwd":"/explicit-cwd"}) == "/explicit-cwd"
+logical_cwd.reset(logical_a)
+logical_b=logical_cwd.set("/remote/project-b")
+assert m._project({}) == "/remote/project-b"
+assert m.sha256("/remote/project-a".encode()).hexdigest()[:12] != m.sha256(m._project({}).encode()).hexdigest()[:12]
+logical_cwd.reset(logical_b)
 large="x"*17000
 assert c.hooks["transform_tool_result"]("terminal", large, session_id="s") is None
 token=profile_scope.set("work")
@@ -104,6 +121,16 @@ assert marker and "indexed 17000 bytes" in marker
 assert observed_scopes[-1] == "work", observed_scopes
 assert c.calls[-1][0] == "mcp__context_mode__ctx_index"
 source_a=c.calls[-1][1]["source"]
+token=logical_cwd.set("/remote/project-a")
+marker=c.hooks["transform_tool_result"]("read_file", large, session_id="s", tool_call_id="logical-a")
+logical_cwd.reset(token)
+assert marker and c.calls[-1][1]["source"].split(":")[2] == m.sha256("/remote/project-a".encode()).hexdigest()[:12]
+token=logical_cwd.set("/remote/project-b")
+search=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_search", {"queries":["needle"]})
+assert search["args"]["source"] == m.sha256("/remote/project-b".encode()).hexdigest()[:12]
+marker=c.hooks["transform_tool_result"]("read_file", large, session_id="s", tool_call_id="logical-b")
+logical_cwd.reset(token)
+assert marker and c.calls[-1][1]["source"].split(":")[2] == search["args"]["source"]
 marker=c.hooks["transform_tool_result"]("read_file", large, session_id="other", tool_call_id="call-a", cwd="/other-project")
 assert observed_scopes[-1] == "default", observed_scopes
 source_b=c.calls[-1][1]["source"]
