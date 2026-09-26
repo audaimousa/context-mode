@@ -58,16 +58,19 @@ print(os.environ.get("HERMES_STUB_RESPONSE", "{}"), end="")
     if (!windows) chmodSync(stub, 0o755);
 
     const harness = String.raw`
-import importlib.util, json, os, pathlib, shutil, tempfile, time
+import contextvars, importlib.util, json, os, pathlib, shutil, tempfile, time
 root=pathlib.Path(${JSON.stringify(ROOT)})
 spec=importlib.util.spec_from_file_location("context_mode_hermes", root/"__init__.py")
 m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+profile_scope=contextvars.ContextVar("profile_scope", default="default")
+observed_scopes=[]
 class C:
  def __init__(self): self.hooks={}; self.commands={}; self.calls=[]; self.delay=False; self.unload=None
  def register_hook(self,n,f): self.hooks[n]=f
  def register_command(self,n,f,*a): self.commands[n]=f
  def on_unload(self,f): self.unload=f
  def dispatch_tool(self,n,a,**kw):
+  observed_scopes.append(profile_scope.get())
   self.calls.append((n,a,kw))
   if self.delay: time.sleep(0.2)
   return json.dumps({"result":"Indexed 1 sections (0 with code) from: live-hermes"})
@@ -94,11 +97,15 @@ indexed=c.hooks["pre_tool_call"]("mcp__context_mode__ctx_index", {"content":"tex
 assert indexed == {"action":"modify","args":{"content":"text","source":f"hermes:manual:{project_id}:manual-doc"}}, repr(indexed)
 large="x"*17000
 assert c.hooks["transform_tool_result"]("terminal", large, session_id="s") is None
+token=profile_scope.set("work")
 marker=c.hooks["transform_tool_result"]("read_file", large, session_id="s", tool_call_id="call-a")
+profile_scope.reset(token)
 assert marker and "indexed 17000 bytes" in marker
+assert observed_scopes[-1] == "work", observed_scopes
 assert c.calls[-1][0] == "mcp__context_mode__ctx_index"
 source_a=c.calls[-1][1]["source"]
 marker=c.hooks["transform_tool_result"]("read_file", large, session_id="other", tool_call_id="call-a", cwd="/other-project")
+assert observed_scopes[-1] == "default", observed_scopes
 source_b=c.calls[-1][1]["source"]
 assert source_a != source_b and "/other-project" not in source_b
 assert c.hooks["transform_tool_result"]("mcp__context_mode__ctx_search", large, session_id="s") is None

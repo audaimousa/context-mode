@@ -6,6 +6,7 @@ and diagnostics through its public CLI and MCP tools.
 """
 from __future__ import annotations
 
+import contextvars
 from hashlib import sha256
 import json
 import os
@@ -176,7 +177,7 @@ def _dispatch_index(args: dict[str, Any]) -> Any:
             _index_lock.release()
             done.set()
 
-    threading.Thread(target=run, name="context-mode-index", daemon=True).start()
+    threading.Thread(target=contextvars.copy_context().run, args=(run,), name="context-mode-index", daemon=True).start()
     if not done.wait(_INDEX_TIMEOUT) or outcome.get("error"):
         return None
     return outcome.get("value")
